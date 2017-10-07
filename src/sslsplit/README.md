@@ -1,1 +1,1 @@
-This is customized sslsplit.
+This is customized sslsplit which is able to log certificates.
