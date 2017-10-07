@@ -1,0 +1,26 @@
+Pre správne fungovanie MitM Automatizéru je nutné použiť hárdver s dostupnými 2 Ethernetovými vstupmi. Odporúčaný je OS Archlinux pri, ktorom je overené že postup funguje a sú na ňom dostupné všetky potrebné balíčky.
+
+
+Inštalácia
+Z priloženého CD je treba nakopírovať zložku "src/". 
+
+
+Závislosťi
+Pred spustením je nutné naištalovať balíčky, ktoré sú nutné pre správny chod aplikácie a inštalácie:
+
+"pacman -S libevent openssl check bridge-utils dsniff tcpdump python2-colorlog python2-pyqt4"
+
+
+SSLsplit
+V zložke "src/sslsplit" je nutné spustiť príkaz "make", ktorý zkompiluje tento nástroj aby ho bolo možné používať.
+
+
+Spúšťanie
+Pred prvým spustením je nutné v zdrojovom súbore "run.py" nutné doplniť správne názvy používaných sieťových kariet. Pri použití s MitM Sondou sú už správne názvy "eno1" a "enp2s0" predpripravené.
+Navyše je nutné doplniť správnu cestu do premmenných "outtDir" kam sa budú zachytené dáta ukladať. Po správnom doplnení je možné útok spustiť ako "root" úžívateľ v zložke "src/" príkazom (pre podrobnejšie informácie o stave je možné použiť "--dbg" parameter):
+
+"./run.py"
+
+Pre nápovedu je možné použiť parameter "--help" alebo "-h", kde sú popísané ďaľšie možnosti spustenia.
+
+"./run.py --help"
