@@ -1,28 +1,6 @@
 #! /usr/bin/env python2.7
 #install dependencies: colorlog
 
-
-
-#DONE: prerobit iptables a bridge aby pouzivali tiez processthread
-#done: urobit cleanup funkciu pri chybe a pri normal exit
-#TODO: settings v GUI
-
-#TODO: poriesit ipv6 s bridge
-#TODO: odtestovat IPV6
-#TODO: pridat wifi
-#TODO: Skontrolovat verziu sslsplit ci mozeme pouzit -A
-#done: Logging
-#TODO: import MITMf / bettercap
-
-
-#DONE overenie dostupnych nastrojov (tcpdump installed? etc.)
-
-
-#TODO: urobit parser pre configurak
-#Done #TODO: vytvorit nejake parametre (napr. pre pouzitie s config atd)
-#Done #TODO: GUI spravit
-
-
 """
 Parametre:
 -o --output kam ukladat vysledne data?
@@ -57,8 +35,6 @@ flush iptables
 stop arpspoof/ bridge
 
 """
-#TODO: eno1 je vrchne => LAN pripojenie
-#TODO: enp2s0 spodne => INTERNET pripojenie
 
 import subprocess
 import threading
@@ -211,18 +187,9 @@ class ProcessThread (threading.Thread):
             logger.info("Started " + self.name)
             self.ready.set()
 
-            #while self.processOpen.poll() is None:
-            #    l = self.processOpen.stderr.readline()
-            #    logger.info(self.name +" : " + l)
-
             self.processOpen.wait()
             self.out, self.err = self.processOpen.communicate()
-            # f1 = open('./logs', 'w+')
-            # print >> f1, self.out
-            # print >> f1, self.err
-            # f1.close()
             logger.debug(self.name + ": " + self.out)
-            #logger.debug(self.name + ": " + self.err)
             logger.debug("%s returned: %s", self.name, str(self.processOpen.returncode))
 
     def stop(self):
@@ -408,17 +375,9 @@ class Bridge:
             runCmd("/usr/sbin/dhclient " + self.bridge)
 
             logger.debug("Setting " + self.ifaceGW + " up")
-            # ip link set enp2s0 promisc on
-            # if [ $? -eq 0 ] ; then echo "Done" ; else echo "Failed" ; fi
-            # ip link set enp2s0 up
-            # if [ $? -eq 0 ] ; then echo "Done" ; else echo "Failed" ; fi
             runCmd("ifconfig " + self.ifaceGW + " 0.0.0.0 promisc up")
 
             logger.debug("Setting " + self.ifaceLAN + " up")
-            # ip link set eno1 promisc on
-            # if [ $? -eq 0 ] ; then echo "Done" ; else echo "Failed" ; fi
-            # ip link set eno1 up
-            # if [ $? -eq 0 ] ; then echo "Done" ; else echo "Failed" ; fi
             runCmd("ifconfig " + self.ifaceLAN + " 0.0.0.0 promisc up")
 
             logger.debug("Setting "+ self.bridge +" up")
@@ -452,23 +411,12 @@ class Iptables:
         runCmd("iptables -A INPUT -p tcp -m physdev --physdev-in {} -j LOG".format(interface)) # Do not know why.. but without this kernel do not process other packet and forwards them only withou SSLSplit magic
         runCmd("iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 10080") # (HTTP connections)
         runCmd("iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-ports 10443") # (HTTPS connections)
-
-        #runCmd("iptables -t nat -A PREROUTING -m physdev --physdev-in br0 -p tcp --dport 443 -j REDIRECT --to-ports 10443")  # (HTTPS connections)
-        #runCmd("iptables -t nat -A PREROUTING -m physdev --physdev-in br0 -p tcp --dport 80 -j REDIRECT --to-ports 10080") # (HTTP connections)
-        #runCmd("iptables -t nat -A PREROUTING -p tcp --dport 587 -j REDIRECT --to-ports 10443") # (STARTTLS SMTP connections)
-        #runCmd("iptables -t nat -A PREROUTING -p tcp --dport 465 -j REDIRECT --to-ports 10443") # (SSL SMTP connections)
-        #runCmd("iptables -t nat -A PREROUTING -p tcp --dport 993 -j REDIRECT --to-ports 10443") # (SSL IMAP connections)
-        #runCmd("iptables -t nat -A PREROUTING -p tcp --dport 5222 -j REDIRECT --to-ports 10080") # (messaging connections)
         runCmd("iptables -t nat -L")
 
         self.createdIpv4 = True
 
-    #def createIpv6(self, interface="enp2s0"):
-
     def createAll(self, interface="eno1"):
         self.flushAll()
-        #runCmd("iptables -A INPUT -p tcp -m physdev --physdev-in {} -j LOG".format(
-        #    interface))  # Do not know why.. but without this kernel do not process other packet and forwards them only withou SSLSplit magic
         runCmd("sysctl -w net.ipv4.ip_forward=1")
         runCmd("sysctl -w net.ipv4.conf.all.rp_filter=0")
         runCmd("sysctl -w net.ipv4.conf.enp2s0.rp_filter=0")
@@ -482,21 +430,7 @@ class Iptables:
         runCmd("iptables -t mangle -A PREROUTING -p tcp --dport 80 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 10080")
         runCmd("iptables -t mangle -A PREROUTING -p tcp --dport 443 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 10443")
 
-        # self.usedInterface = interface
         self.createdIpv4 = True
-
-        #runCmd("sysctl -w net.ipv6.conf.all.forwarding=1")
-        #runCmd("ip -f inet6 rule add fwmark 1 lookup 100")
-        # runCmd("ip -f inet6 route add local default dev {} table 100".format(interface))
-        # runCmd("ip6tables -t mangle -N DIVERT")
-        # runCmd("ip6tables -t mangle -A DIVERT -j MARK --set-mark 1")
-        # runCmd("ip6tables -t mangle -A DIVERT -j ACCEPT")
-        # runCmd("ip6tables -t mangle -A PREROUTING -p tcp -m socket -j DIVERT")
-        # runCmd("ip6tables -t mangle -A PREROUTING -p tcp --dport 80 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 10080")
-        # runCmd(
-        #     "ip6tables -t mangle -A PREROUTING -p tcp --dport 443 -j TPROXY --tproxy-mark 0x1/0x1 --on-port 10443")
-        # # self.usedInterface = interface
-        # self.createdIpv6 = True
 
 
     def flushAll(self):
@@ -527,7 +461,6 @@ def stopThreads():
     if sslsplit:
         sslsplit.stop()
     subprocess.call("killall sslsplit &> /dev/null", shell=True)
-    # runCmd("killall sslsplit") #kill all sslsplit's threads, very important !
     if bridge:
         bridge.remove()
     if iptables:
@@ -541,16 +474,7 @@ def cleanup(retcode, frame=None):
     sys.exit(retcode)
 
 
-#MAIN
-#Configuration
-#outFile = "test"
 wifi = False
-#useBridge = True
-# useIpv4 = True
-# useIpv6 = False
-#useDebug = True
-
-
 anyThreadError = 0
 arp = None
 bridge = None
@@ -608,7 +532,6 @@ def runCli(args):
     print "Press Ctrl-C to quit"
 
     while 1:
-        #sslsplit.processThread.join(1)
         time.sleep(5)
         if anyThreadError != 0:
             cleanup(anyThreadError)
@@ -665,11 +588,3 @@ def main():
         runCli(args)
 
 main()
-
-
-
-
-#/home/netfox/BP-Marusic/sslsplit -D -e tproxy -K certs/ca.key -k certs/ca.key -c certs/ca.crt -A /mnt/sda1/MitM/sslkeys https 0.0.0.0 10443 http 0.0.0.0 10080
-#/home/netfox/BP-Marusic/sslsplit -D -K certs/ca.key -k certs/ca.key -c certs/ca.crt -A /mnt/sda1/MitM/sslkeys https 0.0.0.0 10443 http 0.0.0.0 10080
-
-#tcpdump -i eno1 -s 0 -C 100000 -w /mnt/sda1/MitM/data.pcap -W 10
